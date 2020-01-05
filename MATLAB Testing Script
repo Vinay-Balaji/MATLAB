@@ -1,0 +1,95 @@
+% this script will analyze a mobile log file named "accel _sensor_log"
+clear % clear the workspace
+close all % close any open figures
+%
+load accel _sensor_log % load the mat file to the workspace
+% sensor_log_test is an accelerometer data file collected using MATLAB mobile on iPhone
+%
+t = Acceleration.Timestamp; % get the time of the measurement from the file
+a = Acceleration.Variables; % get the X,Y,Z accelerometer data from the file
+% acceleration is a 3D vector (X,Y,Z directions) measured by the iPhone
+figure
+plot(t, a);
+legend('X', 'Y', 'Z');
+xlabel('Relative time (s)');
+ylabel('Acceleration (m/s^2)');
+x = a(:,1); % x component of the accel vector
+y = a(:,2); % y component of the accel vector
+z = a(:,3); % z component of the accel vector
+mag = sqrt(sum(x.^2 + y.^2 + z.^2,2)); % get the magnitude of the acceleration vector. Sum across the row DIM=2
+%
+figure
+plot(t, mag);
+xlabel('Time (s)');
+ylabel('Acceleration (m/s^2)');
+%
+mean(mag) % should be close to 9.8m/sec sq
+magNoG = mag - mean(mag); % subtract offset caused by gravity
+%
+figure
+plot(t, magNoG);
+xlabel('Time (s)');
+ylabel('Acceleration (m/s^2)');
+minPeakHeight = std(magNoG); % set threshold for peak to the standard deviation of the data.
+%For normal distribution, 68% of values are within +/-1 std dev of the mean
+[pks, locs] = findpeaks(magNoG, 'MINPEAKHEIGHT', minPeakHeight);
+numSteps = numel(pks)
+hold on;
+plot(t(locs), pks, 'r', 'Marker', 'v', 'LineStyle', 'none');
+title('Counting Steps');
+xlabel('Time (s)');
+ylabel('Acceleration Magnitude, No Gravity (m/s^2)');
+hold off;
+
+
+
+
+
+
+
+% this script will collect streaming accelerometer time/data and save to mat file accel_stream_data.mat
+% it is designed to run on mobile device (not desktop PC)
+clear
+disp('Under sensor settings, set Stream to MATLAB = ON')
+%
+m = mobiledev
+m.AccelerationSensorEnabled = 1;
+m.Logging = 1;
+%
+prompt='enter 1 to stop logging';
+stop_log=0;
+while stop_log ~=1
+stop_log=input(prompt)
+end
+m.Logging = 0;
+[a, t] = accellog(m);
+accel_log_data = [t,a];
+save accel_stream_data.mat;
+plot(t, a);
+legend('X', 'Y', 'Z');
+xlabel('Relative time (s)');
+ylabel('Acceleration (m/s^2)');
+x = a(:,1);
+y = a(:,2);
+z = a(:,3);
+mag = sqrt(sum(x.^2 + y.^2 + z.^2, 2));
+plot(t, mag);
+xlabel('Time (s)');
+ylabel('Acceleration (m/s^2)');
+magNoG = mag - mean(mag);
+plot(t, magNoG);
+xlabel('Time (s)');
+ylabel('Acceleration (m/s^2)');
+minPeakHeight = std(magNoG);
+[pks, locs] = findpeaks(magNoG, 'MINPEAKHEIGHT', minPeakHeight);
+numSteps = numel(pks)
+hold on;
+plot(t(locs), pks, 'r', 'Marker', 'v', 'LineStyle', 'none');
+title('Counting Steps');
+xlabel('Time (s)');
+ylabel('Acceleration Magnitude, No Gravity (m/s^2)');
+hold off;
+m.AccelerationSensorEnabled = 0;
+clear m;
+
+
